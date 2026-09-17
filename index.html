@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Холодний атмосферний фронт | Інтерактивна модель</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: rgba(30, 41, 59, 0.85);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-warm: #ef4444;
+            --accent-cold: #3b82f6;
+            --accent-cloud: #a855f7;
+            --accent-rain: #06b6d4;
+            --border-radius: 16px;
+            --font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at 50% 0%, #1e293b 0%, #0f172a 70%);
+            color: var(--text-main);
+            font-family: var(--font-family);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        header {
+            text-align: center;
+            padding: 20px 15px 10px;
+            position: relative;
+        }
+
+        h1 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, #3b82f6, #a855f7, #ef4444);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .help-btn {
+            position: absolute;
+            top: 20px;
+            right: 15px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            font-size: 1.2rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            z-index: 100;
+        }
+
+        .help-btn:hover { background: rgba(255, 255, 255, 0.2); transform: scale(1.1); }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal-overlay.active { display: flex; }
+
+        .modal-content {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            padding: 25px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .modal-content h2 { font-size: 1.2rem; margin-bottom: 15px; color: #60a5fa; }
+        .modal-content p { font-size: 0.9rem; line-height: 1.6; color: var(--text-muted); margin-bottom: 10px; }
+        .modal-content strong { color: var(--text-main); }
+
+        .close-btn {
+            position: absolute; top: 15px; right: 15px;
+            background: rgba(255, 255, 255, 0.1); border: none; color: #fff;
+            width: 30px; height: 30px; border-radius: 50%; cursor: pointer;
+            font-size: 1.2rem; display: flex; align-items: center; justify-content: center;
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 10px 15px 30px;
+            gap: 15px;
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* СЦЕНА - тепер з SVG */
+        .scene-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 4 / 3;
+            max-width: 600px;
+            margin: 0 auto;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            background: linear-gradient(to bottom, #1e1b4b 0%, #312e81 40%, #1e293b 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+        }
+
+        .scene-svg {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: block;
+        }
+
+        /* Шкала висоти */
+        .height-scale {
+            position: absolute;
+            right: 0; top: 0; height: 100%; width: 45px;
+            background: rgba(15, 23, 42, 0.7);
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex; flex-direction: column; justify-content: space-between;
+            padding: 8px 0; z-index: 20;
+            backdrop-filter: blur(4px);
+        }
+
+        .height-mark {
+            position: relative; width: 100%; text-align: center;
+            font-size: 0.6rem; color: var(--text-muted); font-weight: 600;
+        }
+
+        .height-mark::before {
+            content: ''; position: absolute; left: 0; top: 50%;
+            width: 8px; height: 1px; background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Підписи на сцені */
+        .scene-label {
+            position: absolute;
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.9);
+            z-index: 25;
+            padding: 4px 8px;
+            border-radius: 6px;
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(2px);
+            pointer-events: none;
+            transition: opacity 0.3s ease, left 0.15s linear, bottom 0.15s linear;
+        }
+
+        .label-warm { color: #fca5a5; left: 8%; bottom: 12%; }
+        .label-cold { color: #93c5fd; right: 12%; bottom: 12%; }
+        .label-cloud { color: #d8b4fe; opacity: 0; }
+        .label-rain { color: #67e8f9; left: 22%; bottom: 6%; opacity: 0; }
+        .label-front { 
+            color: #fff; opacity: 0;
+            font-size: 0.55rem;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+
+        /* Панель керування */
+        .controls-panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--border-radius);
+            padding: 15px;
+            display: flex; flex-direction: column; gap: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .slider-container { display: flex; flex-direction: column; gap: 10px; }
+        .slider-label {
+            display: flex; justify-content: space-between;
+            font-size: 0.75rem; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]:focus { outline: none; }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 8px; cursor: pointer;
+            background: linear-gradient(90deg, var(--accent-warm), var(--accent-cold));
+            border-radius: 4px;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            height: 28px; width: 28px; border-radius: 50%;
+            background: #fff; cursor: pointer; -webkit-appearance: none;
+            margin-top: -11px;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.8), 0 0 25px var(--accent-cold);
+            border: 2px solid var(--accent-cold);
+        }
+
+        input[type=range]::-moz-range-track {
+            width: 100%; height: 8px; cursor: pointer;
+            background: linear-gradient(90deg, var(--accent-warm), var(--accent-cold));
+            border-radius: 4px;
+        }
+
+        input[type=range]::-moz-range-thumb {
+            height: 28px; width: 28px; border: 2px solid var(--accent-cold);
+            border-radius: 50%; background: #fff; cursor: pointer;
+        }
+
+        .legend-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+        }
+
+        .legend-item {
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px; background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px; cursor: pointer;
+            transition: all 0.3s ease; user-select: none;
+        }
+
+        .legend-item:hover, .legend-item.active {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .legend-item.active { border-color: var(--accent-cold); box-shadow: 0 0 15px rgba(255, 255, 255, 0.1); }
+        .color-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+        .legend-text { font-size: 0.72rem; font-weight: 500; line-height: 1.2; }
+        .legend-sub { font-size: 0.58rem; color: var(--text-muted); display: block; margin-top: 2px; }
+
+        .steps-hint {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 12px; padding: 12px 15px;
+            font-size: 0.8rem; color: #bfdbfe; line-height: 1.5;
+            display: flex; align-items: flex-start; gap: 10px;
+        }
+
+        .steps-hint::before { content: '💡'; font-size: 1.2rem; flex-shrink: 0; }
+
+        footer {
+            text-align: center; padding: 20px;
+            font-size: 0.7rem; color: #475569;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            margin-top: auto;
+        }
+
+        footer strong { color: #64748b; }
+
+        @media (min-width: 600px) {
+            h1 { font-size: 1.6rem; }
+            .legend-grid { grid-template-columns: repeat(4, 1fr); }
+            .legend-item { flex-direction: column; text-align: center; gap: 5px; }
+            .color-dot { width: 16px; height: 16px; }
+            .scene-label { font-size: 0.75rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Холодний атмосферний фронт</h1>
+        <p class="subtitle">Керуйте просуванням фронту повзунком</p>
+        <button class="help-btn" id="helpBtn" aria-label="Довідка">?</button>
+    </header>
+
+    <div class="modal-overlay" id="helpModal">
+        <div class="modal-content">
+            <button class="close-btn" id="closeHelp">×</button>
+            <h2>📚 Що таке холодний фронт?</h2>
+            <p><strong>Холодний фронт</strong> — це межа, де холодне повітря наступає на тепле.</p>
+            <p>🔵 <strong>Холодне повітря</strong> важче, тому воно підтікає під тепле, як клин.</p>
+            <p>🔴 <strong>Тепле повітря</strong> легше, тому воно швидко піднімається вгору вздовж клину.</p>
+            <p>☁️ Піднімаючись, тепле повітря <strong>охолоджується</strong>, і пара перетворюється на краплі — так утворюються <strong>хмари</strong>.</p>
+            <p>🌧️ З цих хмар випадають <strong>зливові дощі</strong>.</p>
+            <p><strong>Як користуватися:</strong> Тягніть повзунок вправо, щоб побачити, як синій клин холодного повітря насувається на червоне тепле.</p>
+        </div>
+    </div>
+
+    <main>
+        <div class="scene-container">
+            <svg class="scene-svg" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid meet">
+                <defs>
+                    <!-- Градієнт для теплого повітря -->
+                    <linearGradient id="warmGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stop-color="rgba(239, 68, 68, 0.1)" />
+                        <stop offset="100%" stop-color="rgba(239, 68, 68, 0.4)" />
+                    </linearGradient>
+                    
+                    <!-- Градієнт для холодного повітря -->
+                    <linearGradient id="coldGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stop-color="rgba(59, 130, 246, 0.1)" />
+                        <stop offset="100%" stop-color="rgba(59, 130, 246, 0.5)" />
+                    </linearGradient>
+
+                    <!-- Градієнт для хмар -->
+                    <radialGradient id="cloudGradient" cx="50%" cy="100%" r="50%">
+                        <stop offset="0%" stop-color="rgba(168, 85, 247, 0.8)" />
+                        <stop offset="70%" stop-color="rgba(168, 85, 247, 0.4)" />
+                        <stop offset="100%" stop-color="rgba(168, 85, 247, 0)" />
+                    </radialGradient>
+
+                    <!-- Стрілки -->
+                    <marker id="arrow-warm-head" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                        <path d="M 0 0 L 10 5 L 0 10 z" fill="#ef4444" />
+                    </marker>
+                    <marker id="arrow-cold-head" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                        <path d="M 0 0 L 10 5 L 0 10 z" fill="#3b82f6" />
+                    </marker>
+                    <marker id="arrow-cloud-head" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                        <path d="M 0 0 L 10 5 L 0 10 z" fill="#a855f7" />
+                    </marker>
+                </defs>
+
+                <!-- ТЕПЛЕ ПОВІТРЯ (заповнює весь простір, крім клину холодного) -->
+                <!-- Тепле повітря знаходиться праворуч від клину, і над ним -->
+                <polygon id="warmPolygon" points="0,0 400,0 400,300 0,300" fill="url(#warmGradient)" />
+
+                <!-- ХОЛОДНЕ ПОВІТРЯ (клин, що насувається зліва) -->
+                <!-- Вершина клину знаходиться на висоті, яка залежить від повзунка -->
+                <!-- Клин: від (0, 300) до (frontX, frontY) до (0, frontY) -->
+                <polygon id="coldPolygon" points="0,300 0,150 0,150" fill="url(#coldGradient)" />
+
+                <!-- ЛІНІЯ ФРОНТУ (межа між масами, похила) -->
+                <line id="frontLine" x1="0" y1="150" x2="0" y2="300" stroke="#fff" stroke-width="3" stroke-dasharray="10 10" stroke-linecap="round" />
+
+                <!-- ХМАРИ (утворюються вздовж лінії фронту, вище неї) -->
+                <!-- Еліпс, що витягнутий вздовж лінії фронту -->
+                <ellipse id="cloudEllipse" cx="0" cy="150" rx="60" ry="30" fill="url(#cloudGradient)" opacity="0" />
+
+                <!-- КРАПЛІ ДОЩУ (падають з хмар вниз) -->
+                <g id="rainGroup" opacity="0">
+                    <line class="raindrop" x1="0" y1="0" x2="-2" y2="15" stroke="#06b6d4" stroke-width="2" stroke-linecap="round" />
+                    <line class="raindrop" x1="20" y1="0" x2="18" y2="15" stroke="#06b6d4" stroke-width="2" stroke-linecap="round" />
+                    <line class="raindrop" x1="40" y1="0" x2="38" y2="15" stroke="#06b6d4" stroke-width="2" stroke-linecap="round" />
+                    <line class="raindrop" x1="60" y1="0" x2="58" y2="15" stroke="#06b6d4" stroke-width="2" stroke-linecap="round" />
+                    <line class="raindrop" x1="80" y1="0" x2="78" y2="15" stroke="#06b6d4" stroke-width="2" stroke-linecap="round" />
+                </g>
+
+                <!-- СТРІЛКИ РУХУ ПОВІТРЯ -->
+                <!-- Стрілка теплого повітря (піднімається вгору вздовж фронту) -->
+                <path id="arrowWarmPath" d="M 0 0 Q 0 0 0 0" stroke="#ef4444" stroke-width="3" fill="none" marker-end="url(#arrow-warm-head)" opacity="0" />
+                
+                <!-- Стрілка холодного повітря (рухається вправо, підтікає) -->
+                <path id="arrowColdPath" d="M 0 0 Q 0 0 0 0" stroke="#3b82f6" stroke-width="3" fill="none" marker-end="url(#arrow-cold-head)" opacity="0" />
+                
+                <!-- Стрілка хмар (рухається вгору-вправо) -->
+                <path id="arrowCloudPath" d="M 0 0 Q 0 0 0 0" stroke="#a855f7" stroke-width="3" fill="none" marker-end="url(#arrow-cloud-head)" opacity="0" />
+            </svg>
+
+            <!-- Шкала висоти -->
+            <div class="height-scale">
+                <div class="height-mark">7 км</div>
+                <div class="height-mark">6 км</div>
+                <div class="height-mark">5 км</div>
+                <div class="height-mark">4 км</div>
+                <div class="height-mark">3 км</div>
+                <div class="height-mark">2 км</div>
+                <div class="height-mark">1 км</div>
+            </div>
+
+            <!-- Підписи -->
+            <div class="scene-label label-warm">Тепле повітря</div>
+            <div class="scene-label label-cold">Холодне повітря</div>
+            <div class="scene-label label-cloud" id="labelCloud">☁️ Хмари</div>
+            <div class="scene-label label-rain" id="labelRain">🌧️ Дощ</div>
+            <div class="scene-label label-front" id="labelFront">Лінія фронту</div>
+        </div>
+
+        <div class="steps-hint">
+            Тягніть повзунок вправо. Зверніть увагу, як <strong>синій клин</strong> холодного повітря підтікає під <strong>червоне тепле</strong> повітря, змушуючи його підніматися вгору, де утворюються хмари і починається дощ.
+        </div>
+
+        <div class="controls-panel">
+            <div class="slider-container">
+                <div class="slider-label">
+                    <span>Просування холодного фронту</span>
+                    <span id="progress-value">0%</span>
+                </div>
+                <input type="range" id="progress-slider" min="0" max="100" step="1" value="0">
+            </div>
+
+            <div class="legend-grid">
+                <div class="legend-item" data-target="warm">
+                    <div class="color-dot" style="background: var(--accent-warm);"></div>
+                    <div class="legend-text">Тепле повітря<span class="legend-sub">Витісняється</span></div>
+                </div>
+                <div class="legend-item" data-target="cold">
+                    <div class="color-dot" style="background: var(--accent-cold);"></div>
+                    <div class="legend-text">Холодне повітря<span class="legend-sub">Наступає</span></div>
+                </div>
+                <div class="legend-item" data-target="cloud">
+                    <div class="color-dot" style="background: var(--accent-cloud);"></div>
+                    <div class="legend-text">Хмари<span class="legend-sub">Конденсація</span></div>
+                </div>
+                <div class="legend-item" data-target="rain">
+                    <div class="color-dot" style="background: var(--accent-rain);"></div>
+                    <div class="legend-text">Опади<span class="legend-sub">Злива</span></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>Авторство: <strong>Олеся Бохонок</strong> | Відповідно до норм НУШ</p>
+        <p>Географічно достовірна інтерактивна модель</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const slider = document.getElementById('progress-slider');
+            const progressValue = document.getElementById('progress-value');
+            
+            // SVG елементи
+            const coldPolygon = document.getElementById('coldPolygon');
+            const frontLine = document.getElementById('frontLine');
+            const cloudEllipse = document.getElementById('cloudEllipse');
+            const rainGroup = document.getElementById('rainGroup');
+            const arrowWarmPath = document.getElementById('arrowWarmPath');
+            const arrowColdPath = document.getElementById('arrowColdPath');
+            const arrowCloudPath = document.getElementById('arrowCloudPath');
+            
+            // Підписи
+            const labelCloud = document.getElementById('labelCloud');
+            const labelRain = document.getElementById('labelRain');
+            const labelFront = document.getElementById('labelFront');
+            
+            const legendItems = document.querySelectorAll('.legend-item');
+            
+            // Модальне вікно
+            const helpBtn = document.getElementById('helpBtn');
+            const helpModal = document.getElementById('helpModal');
+            const closeHelp = document.getElementById('closeHelp');
+
+            helpBtn.addEventListener('click', () => helpModal.classList.add('active'));
+            closeHelp.addEventListener('click', () => helpModal.classList.remove('active'));
+            helpModal.addEventListener('click', (e) => {
+                if (e.target === helpModal) helpModal.classList.remove('active');
+            });
+
+            // --- ГОЛОВНА ЛОГІКА СИМУЛЯЦІЇ ---
+            // SVG viewBox: 400 x 300
+            // Вісь Y: 0 (верх, 7 км) -> 300 (низ, 0 км)
+            // Вісь X: 0 (ліво) -> 400 (право)
+            
+            function updateScene(progress) {
+                const p = progress / 100;
+                
+                // 1. Геометрія клину холодного повітря
+                // Вершина клину (найвища точка) рухається від x=0 до x=320
+                const frontX = p * 320;
+                // Висота вершини клину: чим далі просувається, тим вище піднімається
+                // Від y=280 (низько) до y=100 (високо, 5 км)
+                const frontY = 280 - (p * 180);
+                
+                // Клин: (0, 300) -> (frontX, frontY) -> (0, frontY)
+                // Це трикутник, який імітує холодне повітря, що підтікає
+                coldPolygon.setAttribute('points', `0,300 ${frontX},${frontY} 0,${frontY}`);
+                
+                // 2. Лінія фронту (похила)
+                frontLine.setAttribute('x1', frontX);
+                frontLine.setAttribute('y1', frontY);
+                frontLine.setAttribute('x2', 0);
+                frontLine.setAttribute('y2', 300);
+                
+                // 3. Хмари (еліпс вздовж лінії фронту)
+                // Центр хмар трохи вище лінії фронту
+                const cloudCx = frontX * 0.5;
+                const cloudCy = frontY - 20;
+                const cloudRx = 40 + (p * 40);
+                const cloudRy = 15 + (p * 15);
+                
+                cloudEllipse.setAttribute('cx', cloudCx);
+                cloudEllipse.setAttribute('cy', cloudCy);
+                cloudEllipse.setAttribute('rx', cloudRx);
+                cloudEllipse.setAttribute('ry', cloudRy);
+                cloudEllipse.setAttribute('opacity', Math.min(1, p * 2));
+                
+                // 4. Дощ (падає з хмар вниз)
+                rainGroup.setAttribute('transform', `translate(${cloudCx - 40}, ${cloudCy + 10})`);
+                rainGroup.setAttribute('opacity', Math.min(1, p * 2));
+                
+                // Анімація крапель
+                const drops = rainGroup.querySelectorAll('.raindrop');
+                drops.forEach((drop, i) => {
+                    const offset = (Date.now() / 100 + i * 30) % 100;
+                    drop.setAttribute('transform', `translate(0, ${offset * 0.5})`);
+                    drop.setAttribute('opacity', 1 - offset / 100);
+                });
+                
+                // 5. Стрілки
+                // Стрілка теплого повітря (піднімається вгору вздовж фронту)
+                // Від точки (frontX - 30, 250) вгору до (frontX - 10, frontY + 20)
+                const warmArrowStartX = frontX - 40;
+                const warmArrowStartY = 250;
+                const warmArrowEndX = frontX - 15;
+                const warmArrowEndY = frontY + 30;
+                
+                if (p > 0.05) {
+                    arrowWarmPath.setAttribute('d', `M ${warmArrowStartX} ${warmArrowStartY} Q ${warmArrowStartX - 10} ${warmArrowStartY - 40} ${warmArrowEndX} ${warmArrowEndY}`);
+                    arrowWarmPath.setAttribute('opacity', 1);
+                } else {
+                    arrowWarmPath.setAttribute('opacity', 0);
+                }
+                
+                // Стрілка холодного повітря (рухається вправо, підтікає)
+                // Від (10, 280) до (frontX - 20, 270)
+                if (p > 0.05) {
+                    arrowColdPath.setAttribute('d', `M 10 280 Q ${frontX * 0.5} 270 ${frontX - 20} 265`);
+                    arrowColdPath.setAttribute('opacity', 1);
+                } else {
+                    arrowColdPath.setAttribute('opacity', 0);
+                }
+                
+                // Стрілка хмар (рухається вгору-вправо вздовж фронту)
+                if (p > 0.05) {
+                    arrowCloudPath.setAttribute('d', `M ${cloudCx - 20} ${cloudCy + 10} Q ${cloudCx + 10} ${cloudCy - 10} ${cloudCx + 30} ${cloudCy - 30}`);
+                    arrowCloudPath.setAttribute('opacity', 1);
+                } else {
+                    arrowCloudPath.setAttribute('opacity', 0);
+                }
+                
+                // 6. Підписи
+                labelCloud.style.opacity = p > 0.15 ? 1 : 0;
+                labelCloud.style.left = (cloudCx / 400 * 100 - 5) + '%';
+                labelCloud.style.bottom = (100 - cloudCy / 300 * 100 + 5) + '%';
+                
+                labelRain.style.opacity = p > 0.25 ? 1 : 0;
+                labelRain.style.left = (cloudCx / 400 * 100 - 5) + '%';
+                labelRain.style.bottom = (100 - (cloudCy + 40) / 300 * 100) + '%';
+                
+                labelFront.style.opacity = p > 0.05 ? 0.9 : 0;
+                labelFront.style.left = (frontX / 400 * 100 - 10) + '%';
+                labelFront.style.bottom = (100 - frontY / 300 * 100) + '%';
+                
+                // 7. Оновлення відсотків
+                progressValue.textContent = Math.round(progress) + '%';
+            }
+
+            // Ініціалізація
+            updateScene(slider.value);
+
+            // Обробка повзунка
+            slider.addEventListener('input', (e) => {
+                updateScene(parseFloat(e.target.value));
+            });
+
+            // --- Інтерактивна легенда ---
+            legendItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    const target = item.dataset.target;
+                    const isActive = item.classList.contains('active');
+                    
+                    legendItems.forEach(i => i.classList.remove('active'));
+                    coldPolygon.style.filter = 'none';
+                    cloudEllipse.style.filter = 'none';
+                    rainGroup.style.filter = 'none';
+
+                    if (isActive) return;
+                    item.classList.add('active');
+
+                    if (target === 'cold') {
+                        coldPolygon.style.filter = 'drop-shadow(0 0 20px rgba(59, 130, 246, 0.8))';
+                    } else if (target === 'cloud') {
+                        cloudEllipse.style.filter = 'drop-shadow(0 0 20px rgba(168, 85, 247, 0.8))';
+                    } else if (target === 'rain') {
+                        rainGroup.style.filter = 'drop-shadow(0 0 20px rgba(6, 182, 212, 0.8))';
+                        if (parseFloat(slider.value) < 10) {
+                            slider.value = 40;
+                            updateScene(40);
+                        }
+                    } else if (target === 'warm') {
+                        // Підсвічуємо тепле повітря (воно на фоні, тому просто показуємо)
+                        document.querySelector('.label-warm').style.transform = 'scale(1.2)';
+                        setTimeout(() => {
+                            document.querySelector('.label-warm').style.transform = 'scale(1)';
+                        }, 500);
+                    }
+                });
+            });
+
+            // Анімація крапель дощу
+            setInterval(() => {
+                const p = parseFloat(slider.value) / 100;
+                if (p > 0.2) {
+                    const drops = rainGroup.querySelectorAll('.raindrop');
+                    drops.forEach((drop, i) => {
+                        const offset = (Date.now() / 100 + i * 30) % 100;
+                        drop.setAttribute('transform', `translate(0, ${offset * 0.5})`);
+                        drop.setAttribute('opacity', 1 - offset / 100);
+                    });
+                }
+            }, 50);
+
+            // Оновлення анімації дощу при зміні повзунка
+            slider.addEventListener('input', () => {
+                // Просто для перемальовування
+            });
+        });
+    </script>
+</body>
+</html>
