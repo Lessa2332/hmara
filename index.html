@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Холодний атмосферний фронт | Інтерактивна модель</title>
+    <title>Атмосферні фронти | Інтерактивна модель</title>
     <style>
         :root {
             --bg-color: #0f172a;
@@ -122,24 +122,51 @@
             flex-direction: column;
             padding: 10px 15px 30px;
             gap: 15px;
-            max-width: 800px;
+            max-width: 1200px; /* Ширше для двох колонок */
             margin: 0 auto;
             width: 100%;
         }
 
-        /* СЦЕНА - тепер з SVG */
+        /* Контейнер для двох сцен */
+        .scenes-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 100%;
+        }
+
+        /* СЦЕНА */
         .scene-container {
             position: relative;
             width: 100%;
             aspect-ratio: 4 / 3;
-            max-width: 600px;
-            margin: 0 auto;
             border-radius: var(--border-radius);
             overflow: hidden;
             background: linear-gradient(to bottom, #1e1b4b 0%, #312e81 40%, #1e293b 100%);
             border: 1px solid rgba(255, 255, 255, 0.1);
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
         }
+
+        .scene-title {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.8rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            z-index: 30;
+            padding: 4px 12px;
+            border-radius: 20px;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            pointer-events: none;
+        }
+
+        .title-warm { color: #fca5a5; border-color: rgba(239, 68, 68, 0.5); }
+        .title-cold { color: #93c5fd; border-color: rgba(59, 130, 246, 0.5); }
 
         .scene-svg {
             position: absolute;
@@ -151,7 +178,7 @@
         /* Шкала висоти */
         .height-scale {
             position: absolute;
-            right: 0; top: 0; height: 100%; width: 45px;
+            right: 0; top: 0; height: 100%; width: 40px;
             background: rgba(15, 23, 42, 0.7);
             border-left: 1px solid rgba(255, 255, 255, 0.1);
             display: flex; flex-direction: column; justify-content: space-between;
@@ -161,40 +188,36 @@
 
         .height-mark {
             position: relative; width: 100%; text-align: center;
-            font-size: 0.6rem; color: var(--text-muted); font-weight: 600;
+            font-size: 0.55rem; color: var(--text-muted); font-weight: 600;
         }
 
         .height-mark::before {
             content: ''; position: absolute; left: 0; top: 50%;
-            width: 8px; height: 1px; background: rgba(255, 255, 255, 0.3);
+            width: 6px; height: 1px; background: rgba(255, 255, 255, 0.3);
         }
 
         /* Підписи на сцені */
         .scene-label {
             position: absolute;
-            font-size: 0.65rem;
+            font-size: 0.55rem;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             text-shadow: 0 2px 4px rgba(0,0,0,0.9);
             z-index: 25;
-            padding: 4px 8px;
-            border-radius: 6px;
+            padding: 3px 6px;
+            border-radius: 4px;
             background: rgba(15, 23, 42, 0.7);
             backdrop-filter: blur(2px);
             pointer-events: none;
-            transition: opacity 0.3s ease, left 0.15s linear, bottom 0.15s linear;
+            transition: opacity 0.3s ease;
         }
 
-        .label-warm { color: #fca5a5; left: 8%; bottom: 12%; }
-        .label-cold { color: #93c5fd; right: 12%; bottom: 12%; }
+        .label-warm { color: #fca5a5; }
+        .label-cold { color: #93c5fd; }
         .label-cloud { color: #d8b4fe; opacity: 0; }
-        .label-rain { color: #67e8f9; left: 22%; bottom: 6%; opacity: 0; }
-        .label-front { 
-            color: #fff; opacity: 0;
-            font-size: 0.55rem;
-            border: 1px solid rgba(255,255,255,0.3);
-        }
+        .label-rain { color: #67e8f9; opacity: 0; }
+        .label-front { color: #fff; opacity: 0; font-size: 0.5rem; border: 1px solid rgba(255,255,255,0.3); }
 
         /* Панель керування */
         .controls-panel {
@@ -219,7 +242,7 @@
 
         input[type=range]::-webkit-slider-runnable-track {
             width: 100%; height: 8px; cursor: pointer;
-            background: linear-gradient(90deg, var(--accent-warm), var(--accent-cold));
+            background: linear-gradient(90deg, var(--accent-cold), var(--accent-warm));
             border-radius: 4px;
         }
 
@@ -227,18 +250,18 @@
             height: 28px; width: 28px; border-radius: 50%;
             background: #fff; cursor: pointer; -webkit-appearance: none;
             margin-top: -11px;
-            box-shadow: 0 0 15px rgba(255, 255, 255, 0.8), 0 0 25px var(--accent-cold);
-            border: 2px solid var(--accent-cold);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.8), 0 0 25px #a855f7;
+            border: 2px solid #a855f7;
         }
 
         input[type=range]::-moz-range-track {
             width: 100%; height: 8px; cursor: pointer;
-            background: linear-gradient(90deg, var(--accent-warm), var(--accent-cold));
+            background: linear-gradient(90deg, var(--accent-cold), var(--accent-warm));
             border-radius: 4px;
         }
 
         input[type=range]::-moz-range-thumb {
-            height: 28px; width: 28px; border: 2px solid var(--accent-cold);
+            height: 28px; width: 28px; border: 2px solid #a855f7;
             border-radius: 50%; background: #fff; cursor: pointer;
         }
 
@@ -260,16 +283,16 @@
             transform: translateY(-2px);
         }
 
-        .legend-item.active { border-color: var(--accent-cold); box-shadow: 0 0 15px rgba(255, 255, 255, 0.1); }
+        .legend-item.active { border-color: #a855f7; box-shadow: 0 0 15px rgba(168, 85, 247, 0.3); }
         .color-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
         .legend-text { font-size: 0.72rem; font-weight: 500; line-height: 1.2; }
         .legend-sub { font-size: 0.58rem; color: var(--text-muted); display: block; margin-top: 2px; }
 
         .steps-hint {
-            background: rgba(59, 130, 246, 0.1);
-            border: 1px solid rgba(59, 130, 246, 0.3);
+            background: rgba(168, 85, 247, 0.1);
+            border: 1px solid rgba(168, 85, 247, 0.3);
             border-radius: 12px; padding: 12px 15px;
-            font-size: 0.8rem; color: #bfdbfe; line-height: 1.5;
+            font-size: 0.8rem; color: #e9d5ff; line-height: 1.5;
             display: flex; align-items: flex-start; gap: 10px;
         }
 
@@ -284,134 +307,207 @@
 
         footer strong { color: #64748b; }
 
-        @media (min-width: 600px) {
+        /* Адаптивність: на великих екранах - дві колонки */
+        @media (min-width: 900px) {
             h1 { font-size: 1.6rem; }
+            .scenes-wrapper {
+                flex-direction: row;
+                justify-content: center;
+                align-items: flex-start;
+            }
+            .scene-container {
+                flex: 1;
+                max-width: 550px;
+            }
             .legend-grid { grid-template-columns: repeat(4, 1fr); }
             .legend-item { flex-direction: column; text-align: center; gap: 5px; }
             .color-dot { width: 16px; height: 16px; }
-            .scene-label { font-size: 0.75rem; }
+            .scene-label { font-size: 0.65rem; }
+        }
+
+        @media (max-width: 899px) {
+            .scene-container { max-width: 500px; margin: 0 auto; }
+            .scene-label { font-size: 0.6rem; }
         }
     </style>
 </head>
 <body>
 
     <header>
-        <h1>Холодний атмосферний фронт</h1>
-        <p class="subtitle">Керуйте просуванням фронту повзунком</p>
+        <h1>Атмосферні фронти</h1>
+        <p class="subtitle">Порівняйте теплий та холодний фронти</p>
         <button class="help-btn" id="helpBtn" aria-label="Довідка">?</button>
     </header>
 
     <div class="modal-overlay" id="helpModal">
         <div class="modal-content">
             <button class="close-btn" id="closeHelp">×</button>
-            <h2>📚 Що таке холодний фронт?</h2>
-            <p><strong>Холодний фронт</strong> — це межа, де холодне повітря наступає на тепле.</p>
-            <p>🔵 <strong>Холодне повітря</strong> важче, тому воно підтікає під тепле, як клин.</p>
-            <p>🔴 <strong>Тепле повітря</strong> легше, тому воно швидко піднімається вгору вздовж клину.</p>
-            <p>☁️ Піднімаючись, тепле повітря <strong>охолоджується</strong>, і пара перетворюється на краплі — так утворюються <strong>хмари</strong>.</p>
-            <p>🌧️ З цих хмар випадають <strong>зливові дощі</strong>.</p>
-            <p><strong>Як користуватися:</strong> Тягніть повзунок вправо, щоб побачити, як синій клин холодного повітря насувається на червоне тепле.</p>
+            <h2>📚 Що таке атмосферні фронти?</h2>
+            <p><strong>Атмосферний фронт</strong> — це межа між двома повітряними масами з різними властивостями (температурою, вологістю).</p>
+            <p><strong>🔴 Теплий фронт:</strong> тепле повітря наступає на холодне. Воно легше, тому плавно ковзає вгору. Утворюються шаруваті хмари та мрячні, затяжні дощі. Приносить потепління.</p>
+            <p><strong>🔵 Холодний фронт:</strong> холодне повітря наступає на тепле. Воно важче, тому підтікає під тепле, різко витісняючи його вгору. Утворюються купчасто-дощові хмари та зливові дощі, часто з грозами. Приносить похолодання.</p>
+            <p><strong>Як користуватися:</strong> Тягніть повзунок вправо, щоб побачити, як обидва фронти просуваються одночасно.</p>
         </div>
     </div>
 
     <main>
-        <div class="scene-container">
-            <svg class="scene-svg" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid meet">
-                <defs>
-                    <!-- Градієнт для теплого повітря -->
-                    <linearGradient id="warmGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stop-color="rgba(239, 68, 68, 0.1)" />
-                        <stop offset="100%" stop-color="rgba(239, 68, 68, 0.4)" />
-                    </linearGradient>
+        <div class="scenes-wrapper">
+            <!-- ТЕПЛИЙ ФРОНТ -->
+            <div class="scene-container">
+                <div class="scene-title title-warm">Теплий фронт</div>
+                <svg class="scene-svg" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <linearGradient id="warmGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stop-color="rgba(239, 68, 68, 0.5)" />
+                            <stop offset="100%" stop-color="rgba(239, 68, 68, 0.1)" />
+                        </linearGradient>
+                        <linearGradient id="coldGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stop-color="rgba(59, 130, 246, 0.1)" />
+                            <stop offset="100%" stop-color="rgba(59, 130, 246, 0.5)" />
+                        </linearGradient>
+                        <radialGradient id="cloudGradientWarm" cx="50%" cy="50%" r="50%">
+                            <stop offset="0%" stop-color="rgba(168, 85, 247, 0.9)" />
+                            <stop offset="60%" stop-color="rgba(168, 85, 247, 0.4)" />
+                            <stop offset="100%" stop-color="rgba(168, 85, 247, 0)" />
+                        </radialGradient>
+                        <marker id="arrow-warm-head-w" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#ef4444" />
+                        </marker>
+                        <marker id="arrow-cold-head-w" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#3b82f6" />
+                        </marker>
+                        <marker id="arrow-cloud-head-w" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#a855f7" />
+                        </marker>
+                    </defs>
+
+                    <!-- Тепле повітря (зверху, наступає справа наліво) -->
+                    <polygon id="warmPolygonW" points="400,0 400,300 0,300 0,0" fill="url(#warmGradient)" />
                     
-                    <!-- Градієнт для холодного повітря -->
-                    <linearGradient id="coldGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stop-color="rgba(59, 130, 246, 0.1)" />
-                        <stop offset="100%" stop-color="rgba(59, 130, 246, 0.5)" />
-                    </linearGradient>
-
-                    <!-- Градієнт для хмар -->
-                    <radialGradient id="cloudGradient" cx="50%" cy="100%" r="50%">
-                        <stop offset="0%" stop-color="rgba(168, 85, 247, 0.8)" />
-                        <stop offset="70%" stop-color="rgba(168, 85, 247, 0.4)" />
-                        <stop offset="100%" stop-color="rgba(168, 85, 247, 0)" />
-                    </radialGradient>
-
+                    <!-- Холодне повітря (клин, що відступає вправо) -->
+                    <polygon id="coldPolygonW" points="400,300 400,150 400,150" fill="url(#coldGradient)" />
+                    
+                    <!-- Лінія фронту -->
+                    <line id="frontLineW" x1="400" y1="150" x2="400" y2="300" stroke="#fff" stroke-width="3" stroke-dasharray="10 10" stroke-linecap="round" />
+                    
+                    <!-- Хмари (шаруваті) -->
+                    <ellipse id="cloudEllipseW" cx="400" cy="150" rx="80" ry="25" fill="url(#cloudGradientWarm)" opacity="0" />
+                    
+                    <!-- Мряка -->
+                    <g id="rainGroupW" opacity="0">
+                        <line class="raindrop-w" x1="0" y1="0" x2="0" y2="8" stroke="#06b6d4" stroke-width="1.5" stroke-linecap="round" />
+                        <line class="raindrop-w" x1="15" y1="0" x2="15" y2="8" stroke="#06b6d4" stroke-width="1.5" stroke-linecap="round" />
+                        <line class="raindrop-w" x1="30" y1="0" x2="30" y2="8" stroke="#06b6d4" stroke-width="1.5" stroke-linecap="round" />
+                        <line class="raindrop-w" x1="45" y1="0" x2="45" y2="8" stroke="#06b6d4" stroke-width="1.5" stroke-linecap="round" />
+                        <line class="raindrop-w" x1="60" y1="0" x2="60" y2="8" stroke="#06b6d4" stroke-width="1.5" stroke-linecap="round" />
+                        <line class="raindrop-w" x1="75" y1="0" x2="75" y2="8" stroke="#06b6d4" stroke-width="1.5" stroke-linecap="round" />
+                    </g>
+                    
                     <!-- Стрілки -->
-                    <marker id="arrow-warm-head" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-                        <path d="M 0 0 L 10 5 L 0 10 z" fill="#ef4444" />
-                    </marker>
-                    <marker id="arrow-cold-head" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-                        <path d="M 0 0 L 10 5 L 0 10 z" fill="#3b82f6" />
-                    </marker>
-                    <marker id="arrow-cloud-head" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-                        <path d="M 0 0 L 10 5 L 0 10 z" fill="#a855f7" />
-                    </marker>
-                </defs>
-
-                <!-- ТЕПЛЕ ПОВІТРЯ (заповнює весь простір, крім клину холодного) -->
-                <!-- Тепле повітря знаходиться праворуч від клину, і над ним -->
-                <polygon id="warmPolygon" points="0,0 400,0 400,300 0,300" fill="url(#warmGradient)" />
-
-                <!-- ХОЛОДНЕ ПОВІТРЯ (клин, що насувається зліва) -->
-                <!-- Вершина клину знаходиться на висоті, яка залежить від повзунка -->
-                <!-- Клин: від (0, 300) до (frontX, frontY) до (0, frontY) -->
-                <polygon id="coldPolygon" points="0,300 0,150 0,150" fill="url(#coldGradient)" />
-
-                <!-- ЛІНІЯ ФРОНТУ (межа між масами, похила) -->
-                <line id="frontLine" x1="0" y1="150" x2="0" y2="300" stroke="#fff" stroke-width="3" stroke-dasharray="10 10" stroke-linecap="round" />
-
-                <!-- ХМАРИ (утворюються вздовж лінії фронту, вище неї) -->
-                <!-- Еліпс, що витягнутий вздовж лінії фронту -->
-                <ellipse id="cloudEllipse" cx="0" cy="150" rx="60" ry="30" fill="url(#cloudGradient)" opacity="0" />
-
-                <!-- КРАПЛІ ДОЩУ (падають з хмар вниз) -->
-                <g id="rainGroup" opacity="0">
-                    <line class="raindrop" x1="0" y1="0" x2="-2" y2="15" stroke="#06b6d4" stroke-width="2" stroke-linecap="round" />
-                    <line class="raindrop" x1="20" y1="0" x2="18" y2="15" stroke="#06b6d4" stroke-width="2" stroke-linecap="round" />
-                    <line class="raindrop" x1="40" y1="0" x2="38" y2="15" stroke="#06b6d4" stroke-width="2" stroke-linecap="round" />
-                    <line class="raindrop" x1="60" y1="0" x2="58" y2="15" stroke="#06b6d4" stroke-width="2" stroke-linecap="round" />
-                    <line class="raindrop" x1="80" y1="0" x2="78" y2="15" stroke="#06b6d4" stroke-width="2" stroke-linecap="round" />
-                </g>
-
-                <!-- СТРІЛКИ РУХУ ПОВІТРЯ -->
-                <!-- Стрілка теплого повітря (піднімається вгору вздовж фронту) -->
-                <path id="arrowWarmPath" d="M 0 0 Q 0 0 0 0" stroke="#ef4444" stroke-width="3" fill="none" marker-end="url(#arrow-warm-head)" opacity="0" />
+                    <path id="arrowWarmPathW" d="M 0 0 Q 0 0 0 0" stroke="#ef4444" stroke-width="2.5" fill="none" marker-end="url(#arrow-warm-head-w)" opacity="0" />
+                    <path id="arrowColdPathW" d="M 0 0 Q 0 0 0 0" stroke="#3b82f6" stroke-width="2.5" fill="none" marker-end="url(#arrow-cold-head-w)" opacity="0" />
+                    <path id="arrowCloudPathW" d="M 0 0 Q 0 0 0 0" stroke="#a855f7" stroke-width="2.5" fill="none" marker-end="url(#arrow-cloud-head-w)" opacity="0" />
+                </svg>
                 
-                <!-- Стрілка холодного повітря (рухається вправо, підтікає) -->
-                <path id="arrowColdPath" d="M 0 0 Q 0 0 0 0" stroke="#3b82f6" stroke-width="3" fill="none" marker-end="url(#arrow-cold-head)" opacity="0" />
-                
-                <!-- Стрілка хмар (рухається вгору-вправо) -->
-                <path id="arrowCloudPath" d="M 0 0 Q 0 0 0 0" stroke="#a855f7" stroke-width="3" fill="none" marker-end="url(#arrow-cloud-head)" opacity="0" />
-            </svg>
+                <div class="height-scale">
+                    <div class="height-mark">7 км</div>
+                    <div class="height-mark">6 км</div>
+                    <div class="height-mark">5 км</div>
+                    <div class="height-mark">4 км</div>
+                    <div class="height-mark">3 км</div>
+                    <div class="height-mark">2 км</div>
+                    <div class="height-mark">1 км</div>
+                </div>
 
-            <!-- Шкала висоти -->
-            <div class="height-scale">
-                <div class="height-mark">7 км</div>
-                <div class="height-mark">6 км</div>
-                <div class="height-mark">5 км</div>
-                <div class="height-mark">4 км</div>
-                <div class="height-mark">3 км</div>
-                <div class="height-mark">2 км</div>
-                <div class="height-mark">1 км</div>
+                <div class="scene-label label-warm" style="left: 8%; bottom: 12%;">Тепле повітря</div>
+                <div class="scene-label label-cold" style="right: 12%; bottom: 12%;">Холодне повітря</div>
+                <div class="scene-label label-cloud" id="labelCloudW">☁️ Хмари</div>
+                <div class="scene-label label-rain" id="labelRainW">🌧️ Мряка</div>
+                <div class="scene-label label-front" id="labelFrontW">Лінія фронту</div>
             </div>
 
-            <!-- Підписи -->
-            <div class="scene-label label-warm">Тепле повітря</div>
-            <div class="scene-label label-cold">Холодне повітря</div>
-            <div class="scene-label label-cloud" id="labelCloud">☁️ Хмари</div>
-            <div class="scene-label label-rain" id="labelRain">🌧️ Дощ</div>
-            <div class="scene-label label-front" id="labelFront">Лінія фронту</div>
+            <!-- ХОЛОДНИЙ ФРОНТ -->
+            <div class="scene-container">
+                <div class="scene-title title-cold">Холодний фронт</div>
+                <svg class="scene-svg" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <linearGradient id="warmGradientC" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stop-color="rgba(239, 68, 68, 0.1)" />
+                            <stop offset="100%" stop-color="rgba(239, 68, 68, 0.4)" />
+                        </linearGradient>
+                        <linearGradient id="coldGradientC" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stop-color="rgba(59, 130, 246, 0.1)" />
+                            <stop offset="100%" stop-color="rgba(59, 130, 246, 0.5)" />
+                        </linearGradient>
+                        <radialGradient id="cloudGradientCold" cx="50%" cy="100%" r="50%">
+                            <stop offset="0%" stop-color="rgba(168, 85, 247, 0.8)" />
+                            <stop offset="70%" stop-color="rgba(168, 85, 247, 0.4)" />
+                            <stop offset="100%" stop-color="rgba(168, 85, 247, 0)" />
+                        </radialGradient>
+                        <marker id="arrow-warm-head-c" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#ef4444" />
+                        </marker>
+                        <marker id="arrow-cold-head-c" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#3b82f6" />
+                        </marker>
+                        <marker id="arrow-cloud-head-c" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="#a855f7" />
+                        </marker>
+                    </defs>
+
+                    <!-- Тепле повітря (заповнює простір, крім клину) -->
+                    <polygon id="warmPolygonC" points="0,0 400,0 400,300 0,300" fill="url(#warmGradientC)" />
+                    
+                    <!-- Холодне повітря (клин, що насувається зліва) -->
+                    <polygon id="coldPolygonC" points="0,300 0,150 0,150" fill="url(#coldGradientC)" />
+                    
+                    <!-- Лінія фронту -->
+                    <line id="frontLineC" x1="0" y1="150" x2="0" y2="300" stroke="#fff" stroke-width="3" stroke-dasharray="10 10" stroke-linecap="round" />
+                    
+                    <!-- Хмари (купчасто-дощові) -->
+                    <ellipse id="cloudEllipseC" cx="0" cy="150" rx="60" ry="30" fill="url(#cloudGradientCold)" opacity="0" />
+                    
+                    <!-- Злива -->
+                    <g id="rainGroupC" opacity="0">
+                        <line class="raindrop-c" x1="0" y1="0" x2="-2" y2="15" stroke="#06b6d4" stroke-width="2" stroke-linecap="round" />
+                        <line class="raindrop-c" x1="20" y1="0" x2="18" y2="15" stroke="#06b6d4" stroke-width="2" stroke-linecap="round" />
+                        <line class="raindrop-c" x1="40" y1="0" x2="38" y2="15" stroke="#06b6d4" stroke-width="2" stroke-linecap="round" />
+                        <line class="raindrop-c" x1="60" y1="0" x2="58" y2="15" stroke="#06b6d4" stroke-width="2" stroke-linecap="round" />
+                        <line class="raindrop-c" x1="80" y1="0" x2="78" y2="15" stroke="#06b6d4" stroke-width="2" stroke-linecap="round" />
+                    </g>
+                    
+                    <!-- Стрілки -->
+                    <path id="arrowWarmPathC" d="M 0 0 Q 0 0 0 0" stroke="#ef4444" stroke-width="2.5" fill="none" marker-end="url(#arrow-warm-head-c)" opacity="0" />
+                    <path id="arrowColdPathC" d="M 0 0 Q 0 0 0 0" stroke="#3b82f6" stroke-width="2.5" fill="none" marker-end="url(#arrow-cold-head-c)" opacity="0" />
+                    <path id="arrowCloudPathC" d="M 0 0 Q 0 0 0 0" stroke="#a855f7" stroke-width="2.5" fill="none" marker-end="url(#arrow-cloud-head-c)" opacity="0" />
+                </svg>
+
+                <div class="height-scale">
+                    <div class="height-mark">7 км</div>
+                    <div class="height-mark">6 км</div>
+                    <div class="height-mark">5 км</div>
+                    <div class="height-mark">4 км</div>
+                    <div class="height-mark">3 км</div>
+                    <div class="height-mark">2 км</div>
+                    <div class="height-mark">1 км</div>
+                </div>
+
+                <div class="scene-label label-warm" style="left: 8%; bottom: 12%;">Тепле повітря</div>
+                <div class="scene-label label-cold" style="right: 12%; bottom: 12%;">Холодне повітря</div>
+                <div class="scene-label label-cloud" id="labelCloudC">☁️ Хмари</div>
+                <div class="scene-label label-rain" id="labelRainC">🌧️ Злива</div>
+                <div class="scene-label label-front" id="labelFrontC">Лінія фронту</div>
+            </div>
         </div>
 
         <div class="steps-hint">
-            Тягніть повзунок вправо. Зверніть увагу, як <strong>синій клин</strong> холодного повітря підтікає під <strong>червоне тепле</strong> повітря, змушуючи його підніматися вгору, де утворюються хмари і починається дощ.
+            Тягніть повзунок вправо, щоб побачити, як <strong>обидва фронти просуваються одночасно</strong>. Зверніть увагу: теплий фронт утворює <strong>шаруваті хмари та мряку</strong>, а холодний — <strong>купчасто-дощові хмари та зливу</strong>.
         </div>
 
         <div class="controls-panel">
             <div class="slider-container">
                 <div class="slider-label">
-                    <span>Просування холодного фронту</span>
+                    <span>Просування фронтів</span>
                     <span id="progress-value">0%</span>
                 </div>
                 <input type="range" id="progress-slider" min="0" max="100" step="1" value="0">
@@ -420,19 +516,19 @@
             <div class="legend-grid">
                 <div class="legend-item" data-target="warm">
                     <div class="color-dot" style="background: var(--accent-warm);"></div>
-                    <div class="legend-text">Тепле повітря<span class="legend-sub">Витісняється</span></div>
+                    <div class="legend-text">Тепле повітря<span class="legend-sub">Наступає / Витісняється</span></div>
                 </div>
                 <div class="legend-item" data-target="cold">
                     <div class="color-dot" style="background: var(--accent-cold);"></div>
-                    <div class="legend-text">Холодне повітря<span class="legend-sub">Наступає</span></div>
+                    <div class="legend-text">Холодне повітря<span class="legend-sub">Відступає / Наступає</span></div>
                 </div>
                 <div class="legend-item" data-target="cloud">
                     <div class="color-dot" style="background: var(--accent-cloud);"></div>
-                    <div class="legend-text">Хмари<span class="legend-sub">Конденсація</span></div>
+                    <div class="legend-text">Хмари<span class="legend-sub">Шаруваті / Купчасті</span></div>
                 </div>
                 <div class="legend-item" data-target="rain">
                     <div class="color-dot" style="background: var(--accent-rain);"></div>
-                    <div class="legend-text">Опади<span class="legend-sub">Злива</span></div>
+                    <div class="legend-text">Опади<span class="legend-sub">Мряка / Злива</span></div>
                 </div>
             </div>
         </div>
@@ -448,23 +544,32 @@
             const slider = document.getElementById('progress-slider');
             const progressValue = document.getElementById('progress-value');
             
-            // SVG елементи
-            const coldPolygon = document.getElementById('coldPolygon');
-            const frontLine = document.getElementById('frontLine');
-            const cloudEllipse = document.getElementById('cloudEllipse');
-            const rainGroup = document.getElementById('rainGroup');
-            const arrowWarmPath = document.getElementById('arrowWarmPath');
-            const arrowColdPath = document.getElementById('arrowColdPath');
-            const arrowCloudPath = document.getElementById('arrowCloudPath');
+            // Теплий фронт
+            const coldPolygonW = document.getElementById('coldPolygonW');
+            const frontLineW = document.getElementById('frontLineW');
+            const cloudEllipseW = document.getElementById('cloudEllipseW');
+            const rainGroupW = document.getElementById('rainGroupW');
+            const arrowWarmPathW = document.getElementById('arrowWarmPathW');
+            const arrowColdPathW = document.getElementById('arrowColdPathW');
+            const arrowCloudPathW = document.getElementById('arrowCloudPathW');
+            const labelCloudW = document.getElementById('labelCloudW');
+            const labelRainW = document.getElementById('labelRainW');
+            const labelFrontW = document.getElementById('labelFrontW');
             
-            // Підписи
-            const labelCloud = document.getElementById('labelCloud');
-            const labelRain = document.getElementById('labelRain');
-            const labelFront = document.getElementById('labelFront');
+            // Холодний фронт
+            const coldPolygonC = document.getElementById('coldPolygonC');
+            const frontLineC = document.getElementById('frontLineC');
+            const cloudEllipseC = document.getElementById('cloudEllipseC');
+            const rainGroupC = document.getElementById('rainGroupC');
+            const arrowWarmPathC = document.getElementById('arrowWarmPathC');
+            const arrowColdPathC = document.getElementById('arrowColdPathC');
+            const arrowCloudPathC = document.getElementById('arrowCloudPathC');
+            const labelCloudC = document.getElementById('labelCloudC');
+            const labelRainC = document.getElementById('labelRainC');
+            const labelFrontC = document.getElementById('labelFrontC');
             
             const legendItems = document.querySelectorAll('.legend-item');
             
-            // Модальне вікно
             const helpBtn = document.getElementById('helpBtn');
             const helpModal = document.getElementById('helpModal');
             const closeHelp = document.getElementById('closeHelp');
@@ -475,111 +580,114 @@
                 if (e.target === helpModal) helpModal.classList.remove('active');
             });
 
-            // --- ГОЛОВНА ЛОГІКА СИМУЛЯЦІЇ ---
-            // SVG viewBox: 400 x 300
-            // Вісь Y: 0 (верх, 7 км) -> 300 (низ, 0 км)
-            // Вісь X: 0 (ліво) -> 400 (право)
+            // --- ГОЛОВНА ЛОГІКА ---
             
-            function updateScene(progress) {
+            function updateScenes(progress) {
                 const p = progress / 100;
                 
-                // 1. Геометрія клину холодного повітря
-                // Вершина клину (найвища точка) рухається від x=0 до x=320
-                const frontX = p * 320;
-                // Висота вершини клину: чим далі просувається, тим вище піднімається
-                // Від y=280 (низько) до y=100 (високо, 5 км)
-                const frontY = 280 - (p * 180);
+                // ============ ТЕПЛИЙ ФРОНТ ============
+                // Тепле повітря наступає ЗПРАВА НАЛІВО
+                const frontXW = 400 - (p * 320);
+                const frontYW = 280 - (p * 180);
                 
-                // Клин: (0, 300) -> (frontX, frontY) -> (0, frontY)
-                // Це трикутник, який імітує холодне повітря, що підтікає
-                coldPolygon.setAttribute('points', `0,300 ${frontX},${frontY} 0,${frontY}`);
+                coldPolygonW.setAttribute('points', `400,300 ${frontXW},${frontYW} 400,${frontYW}`);
+                frontLineW.setAttribute('x1', frontXW);
+                frontLineW.setAttribute('y1', frontYW);
+                frontLineW.setAttribute('x2', 400);
+                frontLineW.setAttribute('y2', 300);
                 
-                // 2. Лінія фронту (похила)
-                frontLine.setAttribute('x1', frontX);
-                frontLine.setAttribute('y1', frontY);
-                frontLine.setAttribute('x2', 0);
-                frontLine.setAttribute('y2', 300);
+                const cloudCxW = frontXW + (400 - frontXW) * 0.5;
+                const cloudCyW = frontYW - 15;
+                const cloudRxW = 50 + (p * 40);
+                const cloudRyW = 12 + (p * 10);
                 
-                // 3. Хмари (еліпс вздовж лінії фронту)
-                // Центр хмар трохи вище лінії фронту
-                const cloudCx = frontX * 0.5;
-                const cloudCy = frontY - 20;
-                const cloudRx = 40 + (p * 40);
-                const cloudRy = 15 + (p * 15);
+                cloudEllipseW.setAttribute('cx', cloudCxW);
+                cloudEllipseW.setAttribute('cy', cloudCyW);
+                cloudEllipseW.setAttribute('rx', cloudRxW);
+                cloudEllipseW.setAttribute('ry', cloudRyW);
+                cloudEllipseW.setAttribute('opacity', Math.min(1, p * 2));
                 
-                cloudEllipse.setAttribute('cx', cloudCx);
-                cloudEllipse.setAttribute('cy', cloudCy);
-                cloudEllipse.setAttribute('rx', cloudRx);
-                cloudEllipse.setAttribute('ry', cloudRy);
-                cloudEllipse.setAttribute('opacity', Math.min(1, p * 2));
-                
-                // 4. Дощ (падає з хмар вниз)
-                rainGroup.setAttribute('transform', `translate(${cloudCx - 40}, ${cloudCy + 10})`);
-                rainGroup.setAttribute('opacity', Math.min(1, p * 2));
-                
-                // Анімація крапель
-                const drops = rainGroup.querySelectorAll('.raindrop');
-                drops.forEach((drop, i) => {
-                    const offset = (Date.now() / 100 + i * 30) % 100;
-                    drop.setAttribute('transform', `translate(0, ${offset * 0.5})`);
-                    drop.setAttribute('opacity', 1 - offset / 100);
-                });
-                
-                // 5. Стрілки
-                // Стрілка теплого повітря (піднімається вгору вздовж фронту)
-                // Від точки (frontX - 30, 250) вгору до (frontX - 10, frontY + 20)
-                const warmArrowStartX = frontX - 40;
-                const warmArrowStartY = 250;
-                const warmArrowEndX = frontX - 15;
-                const warmArrowEndY = frontY + 30;
+                rainGroupW.setAttribute('transform', `translate(${cloudCxW - 40}, ${cloudCyW + 5})`);
+                rainGroupW.setAttribute('opacity', Math.min(1, p * 2));
                 
                 if (p > 0.05) {
-                    arrowWarmPath.setAttribute('d', `M ${warmArrowStartX} ${warmArrowStartY} Q ${warmArrowStartX - 10} ${warmArrowStartY - 40} ${warmArrowEndX} ${warmArrowEndY}`);
-                    arrowWarmPath.setAttribute('opacity', 1);
+                    arrowWarmPathW.setAttribute('d', `M ${frontXW + 60} 250 Q ${frontXW + 40} 210 ${frontXW + 20} ${frontYW + 30}`);
+                    arrowWarmPathW.setAttribute('opacity', 1);
+                    arrowColdPathW.setAttribute('d', `M ${frontXW + 20} 270 Q ${frontXW + 80} 270 390 270`);
+                    arrowColdPathW.setAttribute('opacity', 1);
+                    arrowCloudPathW.setAttribute('d', `M ${cloudCxW + 20} ${cloudCyW + 10} Q ${cloudCxW - 10} ${cloudCyW - 10} ${cloudCxW - 30} ${cloudCyW - 30}`);
+                    arrowCloudPathW.setAttribute('opacity', 1);
                 } else {
-                    arrowWarmPath.setAttribute('opacity', 0);
+                    arrowWarmPathW.setAttribute('opacity', 0);
+                    arrowColdPathW.setAttribute('opacity', 0);
+                    arrowCloudPathW.setAttribute('opacity', 0);
                 }
                 
-                // Стрілка холодного повітря (рухається вправо, підтікає)
-                // Від (10, 280) до (frontX - 20, 270)
+                labelCloudW.style.opacity = p > 0.15 ? 1 : 0;
+                labelCloudW.style.left = (cloudCxW / 400 * 100 - 5) + '%';
+                labelCloudW.style.bottom = (100 - cloudCyW / 300 * 100 + 5) + '%';
+                labelRainW.style.opacity = p > 0.25 ? 1 : 0;
+                labelRainW.style.left = (cloudCxW / 400 * 100 - 5) + '%';
+                labelRainW.style.bottom = (100 - (cloudCyW + 40) / 300 * 100) + '%';
+                labelFrontW.style.opacity = p > 0.05 ? 0.9 : 0;
+                labelFrontW.style.left = (frontXW / 400 * 100 - 5) + '%';
+                labelFrontW.style.bottom = (100 - frontYW / 300 * 100) + '%';
+                
+                // ============ ХОЛОДНИЙ ФРОНТ ============
+                // Холодне повітря наступає ЗЛІВА НАПРАВО
+                const frontXC = p * 320;
+                const frontYC = 280 - (p * 180);
+                
+                coldPolygonC.setAttribute('points', `0,300 ${frontXC},${frontYC} 0,${frontYC}`);
+                frontLineC.setAttribute('x1', frontXC);
+                frontLineC.setAttribute('y1', frontYC);
+                frontLineC.setAttribute('x2', 0);
+                frontLineC.setAttribute('y2', 300);
+                
+                const cloudCxC = frontXC * 0.5;
+                const cloudCyC = frontYC - 20;
+                const cloudRxC = 40 + (p * 40);
+                const cloudRyC = 15 + (p * 15);
+                
+                cloudEllipseC.setAttribute('cx', cloudCxC);
+                cloudEllipseC.setAttribute('cy', cloudCyC);
+                cloudEllipseC.setAttribute('rx', cloudRxC);
+                cloudEllipseC.setAttribute('ry', cloudRyC);
+                cloudEllipseC.setAttribute('opacity', Math.min(1, p * 2));
+                
+                rainGroupC.setAttribute('transform', `translate(${cloudCxC - 40}, ${cloudCyC + 10})`);
+                rainGroupC.setAttribute('opacity', Math.min(1, p * 2));
+                
                 if (p > 0.05) {
-                    arrowColdPath.setAttribute('d', `M 10 280 Q ${frontX * 0.5} 270 ${frontX - 20} 265`);
-                    arrowColdPath.setAttribute('opacity', 1);
+                    arrowWarmPathC.setAttribute('d', `M ${frontXC - 40} 250 Q ${frontXC - 50} 210 ${frontXC - 15} ${frontYC + 30}`);
+                    arrowWarmPathC.setAttribute('opacity', 1);
+                    arrowColdPathC.setAttribute('d', `M 10 280 Q ${frontXC * 0.5} 270 ${frontXC - 20} 265`);
+                    arrowColdPathC.setAttribute('opacity', 1);
+                    arrowCloudPathC.setAttribute('d', `M ${cloudCxC - 20} ${cloudCyC + 10} Q ${cloudCxC + 10} ${cloudCyC - 10} ${cloudCxC + 30} ${cloudCyC - 30}`);
+                    arrowCloudPathC.setAttribute('opacity', 1);
                 } else {
-                    arrowColdPath.setAttribute('opacity', 0);
+                    arrowWarmPathC.setAttribute('opacity', 0);
+                    arrowColdPathC.setAttribute('opacity', 0);
+                    arrowCloudPathC.setAttribute('opacity', 0);
                 }
                 
-                // Стрілка хмар (рухається вгору-вправо вздовж фронту)
-                if (p > 0.05) {
-                    arrowCloudPath.setAttribute('d', `M ${cloudCx - 20} ${cloudCy + 10} Q ${cloudCx + 10} ${cloudCy - 10} ${cloudCx + 30} ${cloudCy - 30}`);
-                    arrowCloudPath.setAttribute('opacity', 1);
-                } else {
-                    arrowCloudPath.setAttribute('opacity', 0);
-                }
+                labelCloudC.style.opacity = p > 0.15 ? 1 : 0;
+                labelCloudC.style.left = (cloudCxC / 400 * 100 - 5) + '%';
+                labelCloudC.style.bottom = (100 - cloudCyC / 300 * 100 + 5) + '%';
+                labelRainC.style.opacity = p > 0.25 ? 1 : 0;
+                labelRainC.style.left = (cloudCxC / 400 * 100 - 5) + '%';
+                labelRainC.style.bottom = (100 - (cloudCyC + 40) / 300 * 100) + '%';
+                labelFrontC.style.opacity = p > 0.05 ? 0.9 : 0;
+                labelFrontC.style.left = (frontXC / 400 * 100 - 5) + '%';
+                labelFrontC.style.bottom = (100 - frontYC / 300 * 100) + '%';
                 
-                // 6. Підписи
-                labelCloud.style.opacity = p > 0.15 ? 1 : 0;
-                labelCloud.style.left = (cloudCx / 400 * 100 - 5) + '%';
-                labelCloud.style.bottom = (100 - cloudCy / 300 * 100 + 5) + '%';
-                
-                labelRain.style.opacity = p > 0.25 ? 1 : 0;
-                labelRain.style.left = (cloudCx / 400 * 100 - 5) + '%';
-                labelRain.style.bottom = (100 - (cloudCy + 40) / 300 * 100) + '%';
-                
-                labelFront.style.opacity = p > 0.05 ? 0.9 : 0;
-                labelFront.style.left = (frontX / 400 * 100 - 10) + '%';
-                labelFront.style.bottom = (100 - frontY / 300 * 100) + '%';
-                
-                // 7. Оновлення відсотків
                 progressValue.textContent = Math.round(progress) + '%';
             }
 
-            // Ініціалізація
-            updateScene(slider.value);
+            updateScenes(slider.value);
 
-            // Обробка повзунка
             slider.addEventListener('input', (e) => {
-                updateScene(parseFloat(e.target.value));
+                updateScenes(parseFloat(e.target.value));
             });
 
             // --- Інтерактивна легенда ---
@@ -589,50 +697,61 @@
                     const isActive = item.classList.contains('active');
                     
                     legendItems.forEach(i => i.classList.remove('active'));
-                    coldPolygon.style.filter = 'none';
-                    cloudEllipse.style.filter = 'none';
-                    rainGroup.style.filter = 'none';
+                    
+                    // Скидання всіх підсвічувань
+                    coldPolygonW.style.filter = 'none';
+                    cloudEllipseW.style.filter = 'none';
+                    rainGroupW.style.filter = 'none';
+                    coldPolygonC.style.filter = 'none';
+                    cloudEllipseC.style.filter = 'none';
+                    rainGroupC.style.filter = 'none';
 
                     if (isActive) return;
                     item.classList.add('active');
 
                     if (target === 'cold') {
-                        coldPolygon.style.filter = 'drop-shadow(0 0 20px rgba(59, 130, 246, 0.8))';
+                        coldPolygonW.style.filter = 'drop-shadow(0 0 20px rgba(59, 130, 246, 0.8))';
+                        coldPolygonC.style.filter = 'drop-shadow(0 0 20px rgba(59, 130, 246, 0.8))';
                     } else if (target === 'cloud') {
-                        cloudEllipse.style.filter = 'drop-shadow(0 0 20px rgba(168, 85, 247, 0.8))';
+                        cloudEllipseW.style.filter = 'drop-shadow(0 0 20px rgba(168, 85, 247, 0.8))';
+                        cloudEllipseC.style.filter = 'drop-shadow(0 0 20px rgba(168, 85, 247, 0.8))';
                     } else if (target === 'rain') {
-                        rainGroup.style.filter = 'drop-shadow(0 0 20px rgba(6, 182, 212, 0.8))';
+                        rainGroupW.style.filter = 'drop-shadow(0 0 20px rgba(6, 182, 212, 0.8))';
+                        rainGroupC.style.filter = 'drop-shadow(0 0 20px rgba(6, 182, 212, 0.8))';
                         if (parseFloat(slider.value) < 10) {
                             slider.value = 40;
-                            updateScene(40);
+                            updateScenes(40);
                         }
                     } else if (target === 'warm') {
-                        // Підсвічуємо тепле повітря (воно на фоні, тому просто показуємо)
-                        document.querySelector('.label-warm').style.transform = 'scale(1.2)';
-                        setTimeout(() => {
-                            document.querySelector('.label-warm').style.transform = 'scale(1)';
-                        }, 500);
+                        document.querySelectorAll('.label-warm').forEach(el => {
+                            el.style.transform = 'scale(1.2)';
+                            setTimeout(() => el.style.transform = 'scale(1)', 500);
+                        });
                     }
                 });
             });
 
-            // Анімація крапель дощу
+            // Анімація опадів
             setInterval(() => {
                 const p = parseFloat(slider.value) / 100;
                 if (p > 0.2) {
-                    const drops = rainGroup.querySelectorAll('.raindrop');
-                    drops.forEach((drop, i) => {
-                        const offset = (Date.now() / 100 + i * 30) % 100;
-                        drop.setAttribute('transform', `translate(0, ${offset * 0.5})`);
+                    // Мряка (теплий фронт) - повільна
+                    const dropsW = rainGroupW.querySelectorAll('.raindrop-w');
+                    dropsW.forEach((drop, i) => {
+                        const offset = (Date.now() / 150 + i * 20) % 100;
+                        drop.setAttribute('transform', `translate(0, ${offset * 0.4})`);
+                        drop.setAttribute('opacity', 0.7 - offset / 150);
+                    });
+                    
+                    // Злива (холодний фронт) - швидка
+                    const dropsC = rainGroupC.querySelectorAll('.raindrop-c');
+                    dropsC.forEach((drop, i) => {
+                        const offset = (Date.now() / 80 + i * 20) % 100;
+                        drop.setAttribute('transform', `translate(0, ${offset * 0.6})`);
                         drop.setAttribute('opacity', 1 - offset / 100);
                     });
                 }
             }, 50);
-
-            // Оновлення анімації дощу при зміні повзунка
-            slider.addEventListener('input', () => {
-                // Просто для перемальовування
-            });
         });
     </script>
 </body>
